@@ -1,6 +1,6 @@
-# ============================================================
-# 1. IMPORTS & GLOBAL CONFIGURATION
-# ============================================================
+
+# IMPORTS & CONFIGURATION
+
 
 import pandas as pd
 import numpy as np
@@ -8,7 +8,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-# Scikit-learn
+
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 
@@ -22,14 +22,14 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 
-# LightGBM
+
 import lightgbm as lgb
 from lightgbm import LGBMRegressor
 
 
-# ============================================================
-# GLOBAL PARAMETERS
-# ============================================================
+
+# PARAMETRAGE GENERAL
+
 
 RANDOM_STATE = 42
 
@@ -46,12 +46,6 @@ TARGET = "quantity"
 DATE_COL = "month_date"
 
 
-# ------------------------------------------------------------
-# FAST MODE
-#
-# True = recommended first execution
-# False = heavier final test
-# ------------------------------------------------------------
 
 FAST_MODE = True
 
@@ -81,9 +75,9 @@ print("Fast mode:", FAST_MODE)
 
 
 
-# ============================================================
-# 2. LOAD SOURCE DATA
-# ============================================================
+
+# UPLOAD DES DONNEES
+
 
 filepath = r"C:\Users\arnau\UNAMUR\projet perso\ml_demand_forecast_base.csv"
 
@@ -103,9 +97,8 @@ df.head()
 
 
 
- ============================================================
-# 3. DATA TYPES
-# ============================================================
+# STANDARDISATION DES DONNEES
+
 
 df["month_date"] = pd.to_datetime(
     df["month_date"],
@@ -193,42 +186,8 @@ print(
 
 
 
-# ============================================================
-# 4. FORECAST GRAIN CHECK
-# ============================================================
+# VARIABLES CALANDAIRES REGIONALES
 
-grain = [
-    "month_date",
-    "site_id",
-    "supplier_id",
-    "category_id"
-]
-
-
-duplicate_count = (
-    df.duplicated(
-        grain,
-        keep=False
-    )
-    .sum()
-)
-
-
-print(
-    "Duplicate rows at forecasting grain:",
-    f"{duplicate_count:,}"
-)
-
-print(
-    "Unique site × supplier × category series:",
-    f"{df[SERIES_COLS].drop_duplicates().shape[0]:,}"
-)
-
-
-
-# ============================================================
-# 5. REGIONAL MONTHLY CALENDAR
-# ============================================================
 
 calendar_cols = [
 
@@ -275,10 +234,8 @@ calendar_region = (
 print(calendar_region.head())
 
 
+# METADONNEES DES SERIES
 
-# ============================================================
-# 6. SERIES METADATA
-# ============================================================
 
 metadata_cols = [
 
@@ -317,10 +274,9 @@ print(
 )
 
 
-# ============================================================
-# 7. CPI LOOKUP
-# month × CPI category
-# ============================================================
+
+# LOOKUP CPI x MOIS
+
 
 cpi_lookup = (
 
@@ -355,9 +311,9 @@ print(cpi_lookup.head())
 
 
 
-# ============================================================
-# 8. COMPLETE MONTHLY PANEL
-# ============================================================
+
+# PANEL MENSUEL COMPLET
+
 
 all_months = pd.DataFrame({
 
@@ -382,9 +338,9 @@ panel = series_keys.merge(
 )
 
 
-# ------------------------------------------------------------
-# Actual demand / spend
-# ------------------------------------------------------------
+
+# DEMANDE ET SPEND ACTUEL
+
 
 actuals = df[
     [
@@ -414,10 +370,6 @@ panel = panel.merge(
 )
 
 
-# ------------------------------------------------------------
-# Static metadata
-# ------------------------------------------------------------
-
 panel = panel.merge(
 
     series_metadata,
@@ -428,9 +380,6 @@ panel = panel.merge(
 )
 
 
-# ------------------------------------------------------------
-# CPI
-# ------------------------------------------------------------
 
 panel = panel.merge(
 
@@ -465,9 +414,9 @@ print(
 )
 
 
-# ============================================================
-# 9. CURRENT CALENDAR FEATURES
-# ============================================================
+
+# FEATURES CALANDAIRES ACTUELLES
+
 
 current_calendar = (
     calendar_region
@@ -508,9 +457,9 @@ panel = panel.merge(
 
 
 
-# ============================================================
-# 10. QUANTITY HISTORY
-# ============================================================
+
+# HISTORIQUE DE QUANTITES
+
 
 panel["quantity_current"] = (
     panel["quantity"]
@@ -533,9 +482,9 @@ for lag in range(1, 13):
     )
 
 
-    # ============================================================
-# 11. ROLLING DEMAND FEATURES
-# ============================================================
+
+# FEATURE DE QUANTITE ROULANTES
+
 
 recent_3 = [
     "quantity_current",
@@ -591,9 +540,9 @@ panel["quantity_std_12"] = (
 
 
 
-# ============================================================
-# 12. INTERMITTENT DEMAND FEATURES
-# ============================================================
+
+# FEATURE DE DEMANDE INTERMITTANTE
+
 
 panel["positive_months_3"] = (
     (panel[recent_3] > 0)
@@ -656,9 +605,8 @@ panel["positive_quantity_mean_12"] = (
 
 
 
-# ============================================================
-# 13. UNIT PRICE FEATURES
-# ============================================================
+
+# FEATURES DE PRIX
 
 panel["unit_price_current"] = np.where(
 
@@ -710,7 +658,6 @@ panel["unit_price_change_3m"] = (
 )
 
 
-# Avoid extreme ratios
 panel["unit_price_change_1m"] = (
     panel["unit_price_change_1m"]
     .clip(-0.8, 3)
@@ -723,9 +670,9 @@ panel["unit_price_change_3m"] = (
 )
 
 
-# ============================================================
-# 14. CPI HISTORY — NO FUTURE LEAKAGE
-# ============================================================
+
+# CPI HISTORIQUE
+
 
 grouped = panel.groupby(
     SERIES_COLS,
@@ -775,9 +722,8 @@ panel["cpi_index_change_6m"] = (
 )
 
 
-# ============================================================
-# 15. TIME TREND
-# ============================================================
+
+# INDEX DE TEMPS
 
 first_date = (
     panel["month_date"]
@@ -800,9 +746,9 @@ panel["time_index"] = (
     )
 )
 
-# ============================================================
-# 16. H1 → H6 TARGETS
-# ============================================================
+
+# CONSTRUCTION DES HORIZONS
+
 
 grouped = panel.groupby(
     SERIES_COLS,
@@ -832,9 +778,9 @@ for h in FORECAST_HORIZONS:
 
 
 
-    # ============================================================
-# 17. FUTURE CALENDAR H1 → H6
-# ============================================================
+
+# VARIABLES CALANDAIRES HORIZONS H1-H6
+
 
 for horizon in FORECAST_HORIZONS:
 
@@ -889,9 +835,9 @@ for horizon in FORECAST_HORIZONS:
     )
 
 
-    # ============================================================
-# 18. CALENDAR CHANGE FEATURES
-# ============================================================
+
+# FEATURE DE CHANGEMENTS CALENDAIRES
+
 
 for h in FORECAST_HORIZONS:
 
@@ -937,9 +883,8 @@ for h in FORECAST_HORIZONS:
     )
 
 
-    # ============================================================
-# 19. TARGET MONTH SEASONALITY H1 → H6
-# ============================================================
+# SAISONNALITÉ MOIS CIBLE H1-H6
+
 
 for h in FORECAST_HORIZONS:
 
@@ -990,16 +935,17 @@ for h in FORECAST_HORIZONS:
 
 
 
-    # ============================================================
-# 20. COMMON FEATURE SET
-# ============================================================
+
+# RASSEMBLEMENT FEATURES
+
 
 numeric_common = [
 
-    # Current demand
+# DEMANDE ACTUELLE
+    
     "quantity_current",
 
-    # Quantity lags
+
     "quantity_lag_1",
     "quantity_lag_2",
     "quantity_lag_3",
@@ -1010,7 +956,7 @@ numeric_common = [
     "quantity_lag_9",
     "quantity_lag_12",
 
-    # Rolling demand
+
     "quantity_mean_3",
     "quantity_mean_6",
     "quantity_mean_12",
@@ -1018,7 +964,6 @@ numeric_common = [
     "quantity_std_6",
     "quantity_std_12",
 
-    # Intermittence
     "positive_months_3",
     "positive_months_6",
     "positive_months_12",
@@ -1032,7 +977,7 @@ numeric_common = [
 
     "last_positive_quantity",
 
-    # Price
+
     "unit_price_current",
     "unit_price_lag_1",
     "unit_price_lag_2",
@@ -1043,7 +988,6 @@ numeric_common = [
     "unit_price_change_1m",
     "unit_price_change_3m",
 
-    # CPI
     "cpi_index",
     "cpi_mom_pct",
     "cpi_yoy_pct",
@@ -1059,12 +1003,12 @@ numeric_common = [
     "cpi_index_change_3m",
     "cpi_index_change_6m",
 
-    # Current calendar
+
     "current_working_days",
     "current_public_holidays_weekdays",
     "current_school_holiday_ratio_selected",
 
-    # Trend
+
     "time_index"
 ]
 
@@ -1091,36 +1035,34 @@ odel_categorical_features = [
 
 
 
-# ============================================================
-# 21. FEATURES PER HORIZON
-# ============================================================
+
+# FEATURES PAR HORIZON
+
 
 def get_features(horizon):
 
     future_features = [
 
-        # Target-month calendar
+
         f"target_days_in_month_h{horizon}",
         f"target_working_days_h{horizon}",
         f"target_weekdays_mon_fri_h{horizon}",
 
-        # Public holidays
         f"target_public_holidays_h{horizon}",
         f"target_public_holidays_weekdays_h{horizon}",
 
-        # School holidays
         f"target_school_holiday_ratio_selected_h{horizon}",
         f"target_school_holiday_weekdays_selected_h{horizon}",
 
         f"target_school_holiday_ratio_flanders_h{horizon}",
         f"target_school_holiday_ratio_fwb_h{horizon}",
 
-        # Calendar changes
+
         f"working_days_change_h{horizon}",
         f"school_holiday_change_h{horizon}",
         f"public_holiday_change_h{horizon}",
 
-        # Target month
+
         f"target_month_h{horizon}",
         f"target_quarter_h{horizon}",
         f"target_month_sin_h{horizon}",
@@ -1136,7 +1078,7 @@ def get_features(horizon):
     )
 
 
-    # Keep only existing columns
+
     features = [
 
         col
@@ -1151,9 +1093,9 @@ def get_features(horizon):
     )
 
 
-# ============================================================
-# 22. LIGHTGBM CATEGORICAL PREPARATION
-# ============================================================
+
+# PREPARATION FEATURES CATEGORIELLES LIGHTGBM
+
 
 panel_lgb = (
     panel.copy()
@@ -1170,9 +1112,9 @@ for col in model_categorical_features:
         )
 
 
-# ============================================================
-# 23. BACKTEST ORIGINS
-# ============================================================
+
+# DEFINITION DES ORIGINES
+
 
 BACKTEST_ORIGINS = pd.to_datetime([
 
@@ -1211,9 +1153,9 @@ for origin in BACKTEST_ORIGINS:
 
 
 
-# ============================================================
-# 24. METRICS
-# ============================================================
+
+# METRIQUES
+
 
 def calculate_metrics(
     actual,
@@ -1314,9 +1256,9 @@ def calculate_metrics(
     }
 
 
-# ============================================================
-# 25A. LINEAR REGRESSION
-# ============================================================
+
+# REGRESSION LINEAIRE
+
 
 def fit_predict_linear(
     X_train,
@@ -1423,9 +1365,9 @@ def fit_predict_linear(
 
 
 
-# ============================================================
-# 25B. RANDOM FOREST — OPTIMIZED
-# ============================================================
+
+# RANDOM FOREST
+
 
 def fit_predict_rf(
     X_train,
@@ -1547,9 +1489,9 @@ def fit_predict_rf(
     )
 
 
-# ============================================================
-# 25C. LIGHTGBM DIRECT
-# ============================================================
+
+# LIGHTGBM DIRECT
+
 
 def fit_predict_lgb_direct(
     train,
@@ -1632,9 +1574,9 @@ def fit_predict_lgb_direct(
     )
 
 
-# ============================================================
-# 25D. LIGHTGBM RESIDUAL
-# ============================================================
+
+# LIGHTGBM RESIDUAL
+
 
 def fit_predict_lgb_residual(
     train,
@@ -1662,9 +1604,9 @@ def fit_predict_lgb_residual(
     )
 
 
-    # -----------------------------------------
+
     # Target = future - current quantity
-    # -----------------------------------------
+
 
     y_train = (
 
@@ -1740,10 +1682,10 @@ def fit_predict_lgb_residual(
 
 
 
-    # ============================================================
-# 26. MASTER BACKTEST
+
+# ENTRAINEMENT GENERAL
 # H1 → H6
-# ============================================================
+
 
 prediction_blocks = []
 
@@ -1777,9 +1719,7 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # LEAKAGE-SAFE TRAINING CUTOFF
-        # ====================================================
+
 
         train_end = (
 
@@ -1791,8 +1731,6 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # Use panel_lgb so pandas categories are
-        # already prepared for LightGBM
 
         train = panel_lgb[
 
@@ -1841,9 +1779,8 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
         # BASELINE
-        # ====================================================
+
 
         actual = (
             test[target]
@@ -1859,9 +1796,9 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # LINEAR REGRESSION
-        # ====================================================
+
+        # REG LINEAIRE
+
 
         pred_linear = fit_predict_linear(
 
@@ -1874,9 +1811,9 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
+    
         # RANDOM FOREST
-        # ====================================================
+
 
         pred_rf = fit_predict_rf(
 
@@ -1889,9 +1826,9 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
+
         # LIGHTGBM DIRECT
-        # ====================================================
+
 
         pred_lgb_direct = (
             fit_predict_lgb_direct(
@@ -1905,9 +1842,8 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
         # LIGHTGBM RESIDUAL
-        # ====================================================
+
 
         pred_lgb_residual = (
             fit_predict_lgb_residual(
@@ -1921,9 +1857,6 @@ for origin in BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # STORE
-        # ====================================================
 
         result = test[
             SERIES_COLS
@@ -1978,9 +1911,8 @@ for origin in BACKTEST_ORIGINS:
 
 
 
-# ============================================================
-# 27. COMBINE ALL PREDICTIONS
-# ============================================================
+# COMBINER LES PREDICTIONS
+
 
 all_predictions = pd.concat(
     prediction_blocks,
@@ -2008,9 +1940,9 @@ print(
 
 
 
-# ============================================================
-# 28. FINAL MODEL RESULTS H1 → H6
-# ============================================================
+
+# RESULTATS MODELES H1-H6
+
 
 MODEL_COLUMNS = [
 
@@ -2098,9 +2030,9 @@ print(
 
 
 
-# ============================================================
-# 29. WAPE PIVOT TABLE
-# ============================================================
+
+# TABLE WAPE
+
 
 wape_table = (
 
@@ -2125,9 +2057,8 @@ print(
 )
 
 
-# ============================================================
-# 30. POSITIVE WAPE PIVOT
-# ============================================================
+# TABLE WAPE POSITIFS
+
 
 positive_wape_table = (
 
@@ -2150,6 +2081,8 @@ print(
     .round(2)
     .to_string()
 )
+
+
 
 
 
