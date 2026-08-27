@@ -1,6 +1,6 @@
-# ============================================================
-# 1. SUPPLIER × CATEGORY CONFIGURATION
-# ============================================================
+
+# CONFIGURATION SUPPLIER × CATEGORY
+
 
 SC_SERIES_COLS = [
     "supplier_id",
@@ -23,10 +23,10 @@ SC_RANDOM_STATE = 42
 print("Supplier × Category experiment configured.")
 
 
-# ============================================================
-# 2. AGGREGATE ACTUAL DEMAND
+
+# AGGREGATION DEMANDE ACTUELLE
 # supplier × category × month
-# ============================================================
+
 
 sc_actual = (
     df
@@ -82,9 +82,8 @@ print(
 )
 
 
-# ============================================================
-# 3. COMPLETE MONTHLY SUPPLIER × CATEGORY PANEL
-# ============================================================
+# PANEL MENSUEL COMPLET SUPPLIER × CATEGORY
+
 
 sc_months = pd.DataFrame({
     "month_date": pd.date_range(
@@ -134,9 +133,9 @@ print(
 )
 
 
-# ============================================================
-# 4. SUPPLIER × CATEGORY METADATA
-# ============================================================
+
+# METADONNEES SUPPLIER × CATEGORY
+
 
 sc_metadata_cols = [
     "category_level_1_id",
@@ -168,9 +167,8 @@ sc_panel = sc_panel.merge(
 
 
 
-# ============================================================
-# 5. CPI AT SUPPLIER × CATEGORY LEVEL
-# ============================================================
+# CPI AU GRAIN SUPPLIER × CATEGORY
+
 
 sc_cpi = (
     df
@@ -218,9 +216,9 @@ sc_panel = sc_panel.merge(
 )
 
 
-# ============================================================
-# 6. REGIONAL SITE COMPOSITION
-# ============================================================
+
+# COMPOSITION SITE PAR CATEGORIE
+
 
 site_region = (
     df[
@@ -296,9 +294,9 @@ sc_panel = sc_panel.merge(
 )
 
 
-# ============================================================
-# 7. DEMAND HISTORY
-# ============================================================
+
+# HISTORIQUE DE DEMANDE
+
 
 sc_panel["quantity_current"] = (
     sc_panel["quantity"]
@@ -321,9 +319,7 @@ for lag in range(1, 13):
     )
 
 
-# ============================================================
-# 8. ROLLING DEMAND FEATURES
-# ============================================================
+# FEATURES DE DEMANDE ROULANTE
 
 sc_recent_3 = [
     "quantity_current",
@@ -378,9 +374,9 @@ sc_panel["quantity_std_12"] = (
 )
 
 
-# ============================================================
-# 9. INTERMITTENCE FEATURES
-# ============================================================
+
+# FEATURES D'INTERMITTENCE
+
 
 for window_name, cols in [
     ("3", sc_recent_3),
@@ -439,9 +435,9 @@ sc_panel[
 
 
 
-# ============================================================
-# 10. LAST POSITIVE QUANTITY
-# ============================================================
+
+# DERNIERES QUANTITE POSITIVE
+
 
 sc_panel["_positive_quantity"] = (
     sc_panel["quantity"]
@@ -468,9 +464,9 @@ sc_panel.drop(
     inplace=True
 )
 
-# ============================================================
-# 11. ACTIVE SITE FEATURES
-# ============================================================
+
+# FEATURES NOMBRES DE SITES ACTIF PAR CATEGORIE
+
 
 sc_grouped = sc_panel.groupby(
     SC_SERIES_COLS,
@@ -513,9 +509,9 @@ sc_panel[
 )
 
 
-# ============================================================
-# 12. QUANTITY PER ACTIVE SITE
-# ============================================================
+
+# FEATURE QUANTITE PAR SITE ACTIF
+
 
 sc_panel[
     "quantity_per_site_current"
@@ -550,9 +546,9 @@ for lag in [
     )
 
 
-# ============================================================
-# 13. UNIT PRICE
-# ============================================================
+
+# FEATURE PRIX
+
 
 sc_panel[
     "unit_price_current"
@@ -623,9 +619,9 @@ sc_panel[
 )
 
 
-# ============================================================
-# 14. CPI HISTORY
-# ============================================================
+
+# FEATURE HISTORIQUE CPI
+
 
 sc_grouped = sc_panel.groupby(
     SC_SERIES_COLS,
@@ -673,9 +669,9 @@ sc_panel[
 )
 
 
-# ============================================================
-# 15. TARGETS H1 → H6
-# ============================================================
+
+# HORIZONS H1-H6
+
 
 sc_grouped = sc_panel.groupby(
     SC_SERIES_COLS,
@@ -702,9 +698,9 @@ for h in SC_FORECAST_HORIZONS:
         f"{sc_panel[f'target_h{h}'].notna().sum():,}"
     )
 
-# ============================================================
-# 16. AGGREGATED FUTURE CALENDAR EXPOSURE
-# ============================================================
+
+# VARIABLES CALANDAIRES FUTURES AGGREGE
+
 
 site_known = panel[
     panel[
@@ -782,9 +778,9 @@ for h in SC_FORECAST_HORIZONS:
     )
 
 
-# ============================================================
-# 17. TARGET-MONTH SEASONALITY
-# ============================================================
+
+# SAISONNALITE MOIS CIBLE
+
 
 for h in SC_FORECAST_HORIZONS:
 
@@ -828,9 +824,9 @@ for h in SC_FORECAST_HORIZONS:
     )
 
 
-# ============================================================
-# 18. TIME INDEX
-# ============================================================
+
+# INDEX DE TEMPS
+
 
 sc_first_date = (
     sc_panel["month_date"]
@@ -858,13 +854,13 @@ sc_panel["time_index"] = (
 )
 
 
-# ============================================================
-# 19. COMMON NUMERIC FEATURES
-# ============================================================
+
+# FEATURES GENERALES
+
 
 sc_numeric_common = [
 
-    # Demand
+
     "quantity_current",
 
     "quantity_lag_1",
@@ -883,7 +879,6 @@ sc_numeric_common = [
     "quantity_std_6",
     "quantity_std_12",
 
-    # Intermittence
     "positive_months_3",
     "positive_months_6",
     "positive_months_12",
@@ -897,7 +892,7 @@ sc_numeric_common = [
 
     "last_positive_quantity",
 
-    # Sites
+
     "active_sites_current",
     "active_sites_lag_1",
     "active_sites_lag_2",
@@ -908,7 +903,7 @@ sc_numeric_common = [
     "active_sites_change_1m",
     "active_sites_change_3m",
 
-    # Demand per site
+
     "quantity_per_site_current",
     "quantity_per_site_lag_1",
     "quantity_per_site_lag_2",
@@ -916,12 +911,12 @@ sc_numeric_common = [
     "quantity_per_site_lag_6",
     "quantity_per_site_lag_12",
 
-    # Geography composition
+
     "share_sites_flanders",
     "share_sites_wallonia",
     "share_sites_brussels",
 
-    # Price
+
     "unit_price_current",
     "unit_price_lag_1",
     "unit_price_lag_2",
@@ -932,7 +927,7 @@ sc_numeric_common = [
     "unit_price_change_1m",
     "unit_price_change_3m",
 
-    # CPI
+
     "cpi_index",
     "cpi_mom_pct",
     "cpi_yoy_pct",
@@ -948,14 +943,14 @@ sc_numeric_common = [
     "cpi_index_change_3m",
     "cpi_index_change_6m",
 
-    # Trend
+
     "time_index"
 ]
 
 
-# ============================================================
-# 20. CATEGORICAL FEATURES
-# ============================================================
+
+# FEATURES CATEGORIELLES
+
 
 sc_categorical_features = [
 
@@ -970,9 +965,9 @@ sc_categorical_features = [
 ]
 
 
-# ============================================================
-# 21. FEATURE FUNCTION
-# ============================================================
+
+# FEATURES FUTURES
+
 
 def get_sc_features(horizon):
 
@@ -1018,9 +1013,8 @@ def get_sc_features(horizon):
         )
     )
 
-# ============================================================
-# 22. LIGHTGBM DATAFRAME
-# ============================================================
+# PREPARATION LIGHTGBM
+
 
 sc_panel_lgb = (
     sc_panel.copy()
@@ -1037,9 +1031,9 @@ for col in sc_categorical_features:
         )
 
 
- ============================================================
-# 23A. LINEAR REGRESSION
-# ============================================================
+
+# REGRESSION LINEAIRE
+
 
 def sc_fit_predict_linear(
     X_train,
@@ -1136,9 +1130,9 @@ def sc_fit_predict_linear(
     )
 
 
-# ============================================================
-# 23B. RANDOM FOREST
-# ============================================================
+
+# RANDOM FOREST
+
 
 def sc_fit_predict_rf(
     X_train,
@@ -1248,9 +1242,9 @@ def sc_fit_predict_rf(
     )
 
 
-# ============================================================
-# 23C. LIGHTGBM DIRECT
-# ============================================================
+
+# LIGHTGBM DIRECT
+
 
 def sc_fit_predict_lgb_direct(
     train,
@@ -1314,9 +1308,9 @@ def sc_fit_predict_lgb_direct(
     )
 
 
-# ============================================================
-# 23D. LIGHTGBM RESIDUAL
-# ============================================================
+
+# LIGHTGBM RESIDUAL
+
 
 def sc_fit_predict_lgb_residual(
     train,
@@ -1399,9 +1393,9 @@ def sc_fit_predict_lgb_residual(
 
 
 
-# ============================================================
-# 24. SUPPLIER × CATEGORY MASTER BACKTEST
-# ============================================================
+
+# ENTRAINELENT FINAL SUPPLIER x CATEGORY
+
 
 sc_prediction_blocks = []
 
@@ -1429,9 +1423,6 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-        # ----------------------------------------------------
-        # Leakage-safe cutoff
-        # ----------------------------------------------------
 
         train_end = (
             origin
@@ -1497,9 +1488,6 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # BASELINE
-        # ====================================================
 
         pred_last = (
             test[
@@ -1508,10 +1496,6 @@ for origin in SC_BACKTEST_ORIGINS:
             .values
         )
 
-
-        # ====================================================
-        # LINEAR
-        # ====================================================
 
         pred_linear = (
             sc_fit_predict_linear(
@@ -1526,9 +1510,7 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # RANDOM FOREST
-        # ====================================================
+
 
         pred_rf = (
             sc_fit_predict_rf(
@@ -1543,9 +1525,7 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # LIGHTGBM DIRECT
-        # ====================================================
+
 
         pred_lgb_direct = (
             sc_fit_predict_lgb_direct(
@@ -1559,9 +1539,6 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # LIGHTGBM RESIDUAL
-        # ====================================================
 
         pred_lgb_residual = (
             sc_fit_predict_lgb_residual(
@@ -1575,9 +1552,6 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-        # ====================================================
-        # STORE
-        # ====================================================
 
         result = test[
             SC_SERIES_COLS
@@ -1628,9 +1602,9 @@ for origin in SC_BACKTEST_ORIGINS:
         )
 
 
-# ============================================================
-# 25. COMBINE PREDICTIONS
-# ============================================================
+
+# RASSEMBLER LES PREDICTIONS
+
 
 sc_predictions = pd.concat(
     sc_prediction_blocks,
@@ -1653,9 +1627,9 @@ print(
 )
 
 
-# ============================================================
-# 26. FINAL SC RESULTS
-# ============================================================
+
+# RESULTATS TEST AGGREGE
+
 
 SC_MODELS = [
 
@@ -1741,9 +1715,8 @@ print(
     )
 )
 
-# ============================================================
-# 27. WAPE (%) TABLE
-# ============================================================
+# TABLE WAPE GLOBAL
+
 
 sc_wape_table = (
 
