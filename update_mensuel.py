@@ -1,6 +1,6 @@
-================================================================================
+
 monthly.py — Pipeline mensuel de forecast de la demande
-================================================================================
+
  
 Ce script est destiné à être relancé CHAQUE MOIS, dès qu'un nouveau mois
 d'actuals est disponible dans ml_demand_forecast_base.csv.
@@ -26,19 +26,12 @@ A chaque exécution, il :
  10. Historise les nouveaux forecasts dans forecast_output (sans écraser les
      versions précédentes) et ajoute une ligne à forecast_run.
  
-Sorties (4 tables, dans OUTPUT_DIR) :
+             
  
-  - forecast_output.csv            : table métier principale (historisée)
-  - forecast_monitoring.csv        : KPI de performance agrégés
-  - forecast_actual_comparison.csv : erreurs au grain le plus fin (historisée)
-  - forecast_run.csv               : traçabilité des exécutions (historisée)
  
-================================================================================
-"""
- 
-# ============================================================
-# 0. IMPORTS
-# ============================================================
+
+# IMPORTS
+
  
 import warnings
 warnings.filterwarnings("ignore")
@@ -51,17 +44,16 @@ import pandas as pd
  
 from lightgbm import LGBMRegressor
  
+
+# CONFIGURATION
+
  
-# ============================================================
-# 1. CONFIGURATION — A ADAPTER SI BESOIN
-# ============================================================
- 
-# Dossier contenant ml_demand_forecast_base.csv
+
 BASE_DIR = Path(r"C:\Users\arnau\UNAMUR\projet perso")
  
 INPUT_FILE = BASE_DIR / "ml_demand_forecast_base.csv"
  
-# Dossier où sont stockées (et historisées) les 4 tables de sortie
+
 OUTPUT_DIR = BASE_DIR / "forecast_tables"
  
 FORECAST_OUTPUT_FILE = OUTPUT_DIR / "forecast_output.csv"
@@ -95,14 +87,11 @@ def log(*args):
         print(*args)
  
  
-# ============================================================
-# 2. CALENDAR UTILITIES (génériques, valables pour n'importe
-#    quelle année future — indispensable pour un script qui va
-#    être relancé mois après mois indéfiniment)
-# ============================================================
+
+# VARIABLES CALANDAIRES
+
  
 def easter_sunday(year: int) -> pd.Timestamp:
-    """Date de Pâques (algorithme de Meeus/Jones/Butcher)."""
     a = year % 19
     b = year // 100
     c = year % 100
@@ -121,11 +110,7 @@ def easter_sunday(year: int) -> pd.Timestamp:
  
  
 def belgian_public_holidays(year: int) -> pd.DatetimeIndex:
-    """
-    Jours fériés légaux belges pour une année donnée, calculés
-    algorithmiquement (pas de liste codée en dur -> valable pour
-    n'importe quelle année passée ou future).
-    """
+ 
     easter = easter_sunday(year)
  
     holidays = [
@@ -154,7 +139,7 @@ def public_holidays_range(start: pd.Timestamp, end: pd.Timestamp) -> pd.Datetime
  
  
 def weekdays_between(start, end) -> int:
-    """Nombre de jours lundi-vendredi entre deux dates (inclus)."""
+  
     start = pd.Timestamp(start)
     end = pd.Timestamp(end)
     if end < start:
@@ -163,22 +148,10 @@ def weekdays_between(start, end) -> int:
     return int((dates.weekday < 5).sum())
  
  
-# ------------------------------------------------------------
+
 # Vacances scolaires belges.
-#
-# Contrairement aux jours fériés légaux, les vacances scolaires
-# belges (Flandre / FWB) ne suivent pas une formule algorithmique
-# simple : elles sont fixées chaque année par les autorités
-# compétentes. On maintient donc un registre explicite, à mettre
-# à jour une fois par an (2 minutes) avec les dates officielles.
-#
-# Quand l'année demandée n'est pas dans le registre, le script NE
-# DEVINE PAS de dates précises : il retombe sur la moyenne
-# historique observée pour ce même mois calendaire dans les
-# données (voir `estimate_school_holiday_ratio_from_history`).
-# Un warning est affiché dans ce cas pour que l'utilisateur pense
-# à compléter le registre.
-# ------------------------------------------------------------
+
+
  
 SCHOOL_HOLIDAYS_BY_YEAR = {
     2026: {
@@ -193,18 +166,13 @@ SCHOOL_HOLIDAYS_BY_YEAR = {
             (pd.Timestamp("2026-12-21"), pd.Timestamp("2026-12-31")),  # Noël
         ],
     },
-    # TODO : ajouter ici les dates officielles des années suivantes,
-    # par exemple :
-    # 2027: {"FLANDERS": [...], "FWB": [...]},
+  
+
 }
  
  
 def school_holiday_weekdays_exact(year: int, region_type: str, month_start, month_end):
-    """
-    Retourne le nombre de jours ouvrés (lun-ven) de vacances scolaires
-    pour un mois donné, si l'année est présente dans le registre.
-    Retourne None si l'année n'est pas connue (-> fallback historique).
-    """
+
     periods = SCHOOL_HOLIDAYS_BY_YEAR.get(year, {}).get(region_type)
     if periods is None:
         return None
@@ -219,11 +187,7 @@ def school_holiday_weekdays_exact(year: int, region_type: str, month_start, mont
  
  
 def build_historical_month_ratio(calendar_region: pd.DataFrame) -> pd.DataFrame:
-    """
-    Moyenne historique du ratio de vacances scolaires par mois calendaire
-    (1-12) x région, utilisée comme fallback quand une année future n'est
-    pas dans SCHOOL_HOLIDAYS_BY_YEAR.
-    """
+
     tmp = calendar_region.copy()
     tmp["month_number"] = tmp["month_date"].dt.month
     avg = (
