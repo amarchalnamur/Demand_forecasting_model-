@@ -1,6 +1,6 @@
-# ============================================================
-# 1. IMPORTS & LOAD DATA
-# ============================================================
+
+# IMPORTS
+
 
 import pandas as pd
 import numpy as np
@@ -38,9 +38,9 @@ print(
 )
 
 
-# ============================================================
-# 2. GRAIN UNIQUENESS
-# ============================================================
+
+# UNICITE DU GRAIN
+
 
 grain_check = (
     df
@@ -66,9 +66,9 @@ print(
 )
 
 
-# ============================================================
-# 3. TIME SERIES HISTORY
-# ============================================================
+
+# HISTORIQUES DES SERIES
+
 
 series_history = (
     df
@@ -137,9 +137,9 @@ print(
 )
 
 
-# ============================================================
-# 4. ZERO DEMAND
-# ============================================================
+
+# ANALYSE DE DEMANDE NULLE
+
 
 zero_stats = (
     df
@@ -189,9 +189,9 @@ print(
 
 
 
-# ============================================================
-# 5. DEMAND OCCURRENCE PERSISTENCE
-# ============================================================
+
+# ANALYSE D'OCCURENCE DE LA DEMANDE
+
 
 occurrence = df[
     SERIES_COLS
@@ -251,9 +251,9 @@ print(transition_matrix)
 
 
 
-# ============================================================
-# 6. QUANTITY CORRELATION WITH LAGS
-# ============================================================
+
+# CORRELATION DE QUANTITE EN LAGS
+
 
 base_quantity = df[
     SERIES_COLS
@@ -315,9 +315,9 @@ for lag in [
 
 
 
-    # ============================================================
-# 7. POSITIVE QUANTITY DISTRIBUTION
-# ============================================================
+
+# DISTRIBUTION DES QUANTITES POSITIVES
+
 
 positive_quantity = (
     df.loc[
@@ -348,9 +348,8 @@ print(
 
 
 
-# ============================================================
-# 8. SERIES VOLATILITY
-# ============================================================
+# VOLATILITE DES SERIES
+
 
 series_volatility = (
     df[
@@ -394,21 +393,11 @@ print(
 
 
 
+# COMPARAISON DE GRANULARITE SITE VS CATEGORIE
 
 
-
-
-
-# ============================================================
-# GRANULARITY COMPARISON
 # SITE × SUPPLIER × CATEGORY
-# VS
-# SUPPLIER × CATEGORY
-# ============================================================
 
-# ------------------------------------------------------------
-# 1. SITE × SUPPLIER × CATEGORY
-# ------------------------------------------------------------
 
 site_series_cols = [
     "site_id",
@@ -439,9 +428,9 @@ site_stats["cv_quantity"] = (
     / site_stats["mean_quantity"]
 )
 
-# ------------------------------------------------------------
-# 2. SUPPLIER × CATEGORY
-# ------------------------------------------------------------
+
+# SUPPLIER × CATEGORY
+
 
 supplier_category_df = (
     df
@@ -485,9 +474,9 @@ supplier_category_stats["cv_quantity"] = (
     / supplier_category_stats["mean_quantity"]
 )
 
-# ------------------------------------------------------------
-# 3. SUMMARY TABLE
-# ------------------------------------------------------------
+
+# TABLE DES RESULTATS
+
 
 granularity_comparison = pd.DataFrame({
 
